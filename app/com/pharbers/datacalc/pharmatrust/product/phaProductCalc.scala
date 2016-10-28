@@ -12,9 +12,10 @@ import excel.model.PharmaTrust.PharmaTrustPorduct
 import scala.collection.JavaConversions
 import com.pharbers.util.StringOption
 import excel.model.modelRunData
-import com.pharbers.common.datacalc.backWriterSumVolumFunction
+import com.pharbers.datacalc.common.backWriterSumVolumFunction
 import excel.model.integratedData
 import java.io.PrintWriter
+import com.pharbers.datacalc.common.CalcData
 
 object phaProductCalc extends App {
     val start = RunDate.startDate()
@@ -107,40 +108,10 @@ object phaProductCalc extends App {
     RunDate.endDate("data_max数据", time)
 
     /**
-     * 回填sumValue、volumeunit
-     */
-    time = RunDate.startDate()
-    val data_max_new = backWriterSumVolumFunction(data_max.sortBy(x => x.sortConditions1), integratedData.sortBy(y => y.sortConditions1))(x => x.sortConditions1)(y => y.sortConditions1)
-    println(data_max_new.count(x => x.sumValue != 0 && x.volumeUnit != 0))
-    println(data_max_new.size)
-    RunDate.endDate("data_max_new数据", time)
-
-    /**
      * 开始计算
      */
     time = RunDate.startDate()
-    val data_calc = data_max_new.toStream
-
-    lazy val max_filter_data = data_calc.filter(_.ifPanelTouse.equals("1")).sortBy(_.segment.toInt)
-
-    lazy val max_calc_distinct = max_filter_data.map(_.segment).distinct
-
-    val sum_data = max_calc_distinct map { x1 =>
-        val max_filter = max_filter_data.filter(x => x.segment.equals(x1))
-        (x1, (max_filter.map(_.sumValue).sum, max_filter.map(_.volumeUnit).sum, max_filter.map(_.westMedicineIncome).sum))
-    }
-
-    sum_data.foreach { x1 =>
-        data_max_new filter (x2 => x2.segment.equals(x1._1)) foreach { iter =>
-            if (iter.ifPanelAll.equals("1")) {
-                iter.finalResultsValue = iter.sumValue
-                iter.finalResultsUnit = iter.volumeUnit
-            } else {
-                iter.finalResultsValue = x1._2._1 / x1._2._3 * iter.westMedicineIncome * iter.factor.toDouble
-                iter.finalResultsUnit = x1._2._2 / x1._2._3 * iter.westMedicineIncome * iter.factor.toDouble
-            }
-        }
-    }
+    val data_max_new = CalcData(data_max,integratedData)
     println(data_max_new.size)
     RunDate.endDate("data_max_new数据", time)
     println(data_max_new.count(x => x.finalResultsValue != 0 && x.finalResultsUnit != 0))

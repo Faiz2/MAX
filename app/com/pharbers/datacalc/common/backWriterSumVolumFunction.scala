@@ -1,4 +1,4 @@
-package com.pharbers.common.datacalc
+package com.pharbers.datacalc.common
 
 import scala.Stream
 import scala.collection.mutable.ArrayBuffer
