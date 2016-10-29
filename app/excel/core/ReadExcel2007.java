@@ -1,5 +1,6 @@
 package excel.core;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -205,7 +206,7 @@ public class ReadExcel2007<T> extends DefaultHandler{
 	 */
 	public void processByRow() throws Exception {
 		curRow = 0;
-		pkg = OPCPackage.open(fileName);
+		pkg = OPCPackage.open(new FileInputStream(fileName));
 		XSSFReader r = new XSSFReader(pkg);
 		SharedStringsTable sst = r.getSharedStringsTable();
 		XMLReader parser = fetchSheetParser(sst);
@@ -226,7 +227,7 @@ public class ReadExcel2007<T> extends DefaultHandler{
 	 */
 	public void processByRow(int optSheetIndex) throws Exception {
 		curRow = 0;
-		pkg = OPCPackage.open(fileName);
+		pkg = OPCPackage.open(new FileInputStream(fileName));
 		XSSFReader r = new XSSFReader(pkg);
 		SharedStringsTable sst = r.getSharedStringsTable();
 

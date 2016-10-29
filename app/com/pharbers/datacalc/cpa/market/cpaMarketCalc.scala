@@ -4,101 +4,109 @@ import com.pharbers.util.RunDate
 import com.pharbers.datacalc.manager.hospdatabase.readHospDataBase
 import com.pharbers.datacalc.manager.hospmatchingdata.readHospMatchData
 import com.pharbers.datacalc.manager.market.readMarket
-import excel.core.ReadExcel2007
 import excel.model.CPA.CpaMarket
+import excel.model.Manage.AdminHospitalDataBase
+import excel.model.Manage.AdminHospitalMatchingData
+import excel.model.Manage.AdminMarket
 import scala.collection.JavaConversions
-import excel.model.integratedData
-import excel.model.modelRunData
-import com.pharbers.datacalc.common.backWriterSumVolumFunction
-import java.io.PrintWriter
-import com.pharbers.datacalc.common.CalcData
+import com.pharbers.datacalc.manager.algorithm.backWriterSumVolumFunction
+import com.pharbers.datacalc.manager.cpa.readCpaMarketData
+import com.pharbers.util.StringOption
+import com.pharbers.datacalc.manager.algorithm.maxUnionAlgorithm
+import com.pharbers.datacalc.manager.algorithm.maxCalcUnionAlgorithm
+import com.pharbers.datacalc.manager.algorithm.maxCalcAlgorithm
 
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits._
+import akka.actor.Actor
+import akka.actor.Props
+import akka.pattern.ask
+import akka.util.Timeout
+import java.util.concurrent.TimeUnit
+import akka.actor.ActorRef
+import scala.concurrent.Await
+import com.pharbers.datacalc.manager.domestic._
+import akka.actor.ActorSystem
+import play.api.Play.current
+import play.api.libs.concurrent.Akka
+import akka.actor.ActorLogging
+import com.pharbers.datacalc.manager.maxmessage.excute
+import com.pharbers.datacalc.manager.maxmessage.MarketMessageRoutes
+import com.pharbers.datacalc.manager.maxmessage.DataMessage._
 
-object cpaMarketCalc extends App{
-    val start = RunDate.startDate()
+case class start()
+
+object cpaMarketCalc extends App {
     
-    /**
-     * 医院数据库
-     */
-    var time = RunDate.startDate()
-    val hospdatabase = readHospDataBase("""E:\文件\法伯相关\MAX改建\程序测试数据\管理员上传\8000家taxol医院数据库表.xlsx""").listHospDataBase
-    println(hospdatabase.size)
-    RunDate.endDate("医院数据库", time)
+    implicit val timeout = Timeout(10*60 second)
     
-    /**
-     * 样本医院
-     */
-    time = RunDate.startDate()
-    val hospmatchingdata = readHospMatchData("""E:\文件\法伯相关\MAX改建\程序测试数据\管理员上传\管理员维护_样本医院匹配表_2016_HTN_bpeng.xlsx""").listHospDataBase
-    println(hospmatchingdata.size)
-    RunDate.endDate("样本医院", time)
+//     val act = currentActorSystem().actorOf(Props[MarketRoutesActor], "main")
+//     val r = act ? excute(MarketMessageRoutes)
     
-    /**
-     * 市场匹配
-     */
-    time = RunDate.startDate()
-    val market = readMarket("""E:\文件\法伯相关\MAX改建\程序测试数据\管理员上传\管理员维护_市场匹配表_2016_HTN.xlsx""")
-    println(market.size)
-    RunDate.endDate("市场匹配", time)
-    
-    /**
-     * 用户上传cpaMarket数据
-     */
-    time = RunDate.startDate()
-    val titleCpaMarket = Array("省","城市","年","月","医院编码","市场分类","数量","金额")
-    val fieldNamesCpaMarket = Array("province", "city", "uploadYear", "uploadMonth", "hospNum", "marketname", "volumeUnit", "sumValue")
-    val objCpaMarket = new ReadExcel2007("""E:\文件\法伯相关\MAX改建\程序测试数据\客户上传\201601-07-CPA-HTN市场数据待上传.xlsx""")
-    val listCpaMarket = objCpaMarket.readExcel(objCpaMarket, new CpaMarket().getClass, 1, false, false, fieldNamesCpaMarket, titleCpaMarket)
-    println(listCpaMarket.size)
-    RunDate.endDate("用户上传Market数据", time)
-    
-    /**
-     * 整合数据List
-     */
-    lazy val elem3 = market filter(_.getDatasource.equals("CPA")) sortBy(_.getMinMarket)
-    lazy val elem2 = hospmatchingdata sortBy (_.getHospNum)
-    lazy val elem1 = JavaConversions.asScalaBuffer(listCpaMarket).toStream sortBy (x => (x.getHospNum,x.getMarketname))
-    time = RunDate.startDate()
-    lazy val hospNum = elem1.map (_.getHospNum).distinct
-    val integratedData = (elem1.filter(x => hospNum.contains(x.getHospNum)).map{x =>
-        val cpaMarket = x
-        val market_opt = elem3.find(z => z.getMinMarket.equals(x.getMarketname))
-        val hospMatch_opt = elem2.find(_.getHospNum == x.getHospNum)
-        (market_opt,hospMatch_opt) match{
-            case (Some(market),Some(hospMatch)) =>
-                Some(new integratedData(cpaMarket.getUploadYear, cpaMarket.getUploadMonth, hospMatch.getDatasource, hospMatch.getHospNum, cpaMarket.getSumValue, cpaMarket.getVolumeUnit, market.getMinMarket, market.getMinMarketCh, market.getMinMarketEn, null, null, null, null, null, null, null, null, null, null, null, null, null, null, market.getMarket1Ch, market.getMarket1En, hospMatch.getHospNameCh, hospMatch.getHospNameEn, hospMatch.getHospLevelCh, hospMatch.getHospLevelEn, hospMatch.getAreaCh, hospMatch.getAreaEn, hospMatch.getProvinceCh, hospMatch.getProvinceEn, hospMatch.getCityCh, hospMatch.getCityEn))
-            case _ =>None
+    class ExcelReadActor extends Actor with ActorLogging {
+        var admin_hosp_data: Option[Stream[AdminHospitalDataBase]] = None
+        var admin_hsop_match_data : Option[Stream[AdminHospitalMatchingData]] = None
+        var admin_market_data : Option[Stream[AdminMarket]] = None
+        var user_market : Option[Stream[CpaMarket]] = None
+
+        def receive = {
+            case start() => {
+                val tmp = context.actorOf(Props(new ExcelReadActor), "cpamarkettemp")
+                val adminActor = currentActorSystem().actorOf(Props[DomesticActor])
+                val userActor = currentActorSystem().actorOf(Props[DomesticUserActor])
+                adminActor.tell(admin_market(
+                        """E:\文件\法伯相关\MAX改建\程序测试数据\管理员上传\8000家taxol医院数据库表.xlsx""",
+                        """E:\文件\法伯相关\MAX改建\程序测试数据\管理员上传\管理员维护_样本医院匹配表_2016_HTN_bpeng.xlsx""",
+                        """E:\文件\法伯相关\MAX改建\程序测试数据\管理员上传\管理员维护_市场匹配表_2016_HTN.xlsx"""
+                        ), tmp)
+                userActor.tell(cpaMarket("""E:\文件\法伯相关\MAX改建\程序测试数据\客户上传\201601-07-CPA-HTN市场数据待上传.xlsx"""), tmp)
+            }
+            
+            case DomesticTimeOut => log.error("读取文件错误或者文件不存在")
+            case ExcelMakertResult(hosp_data, hosp_data_match, market_data) => {
+                log.info("XXX.pronhub.com")
+                admin_hosp_data = Some(hosp_data)
+                admin_hsop_match_data = Some(hosp_data_match)
+                admin_market_data = Some(market_data)
+                startCalcMarket
+            }
+            case ExcelCpaMarketResult(data) => {
+                log.info("用户上传数据读取成功......")
+                user_market = Some(data)
+                startCalcMarket
+            }
+            case _ => Unit
         }
-    }).filter(x => x != None).map(x => x match{
-        case Some(y) => y
-        case _ => ???
-    })
-    println(integratedData.size)
-    RunDate.endDate("整合数据List", time)
-    
-    /**
-     * 拼接计算表
-     */
-    time = RunDate.startDate()
-    lazy val output = integratedData.groupBy(x =>(x.getUploadYear,x.getUploadMonth,x.getMinimumUnitCh)).map(_._2.head).toStream
-    println("output==="+output.size.toString)
-    lazy val data_max = (output map{element2 =>
-        hospdatabase map{element =>
-            new modelRunData(element.getCompany, element2.uploadYear, element2.uploadMonth, 0.0, 0.0, element2.minimumUnit, element2.minimumUnitCh, element2.minimumUnitEn, element2.manufacturerCh, element2.manufacturerEn, element2.generalnameCh, element2.generalnameEn, element2.tradenameCh, element2.tradenameEn, element2.dosageformsCh, element2.dosageformsEn, element2.drugspecificationsCh, element2.drugspecificationsEn, element2.numberpackagingCh, element2.numberpackagingEn, element2.skuCh, element2.skuEn, element2.market1Ch, element2.market1En, element.getSegment, element.getFactor, element.getIfPanelAll, element.getIfPanelTouse, element.getHospId, element.getHospName, element.getPhaid, element.getIfCounty, element.getHospLevel, element.getRegion, element.getProvince, element.getPrefecture, element.getCityTier, element.getSpecialty1, element.getSpecialty2, element.getReSpecialty, element.getSpecialty3, element.getWestMedicineIncome, element.getDoctorNum, element.getBedNum, element.getGeneralBedNum, element.getMedicineBedNum, element.getSurgeryBedNum, element.getOphthalmologyBedNum, element.getYearDiagnosisNum, element.getClinicNum, element.getMedicineNum, element.getSurgeryNum, element.getHospitalizedNum, element.getHospitalizedOpsNum, element.getIncome, element.getClinicIncome, element.getClimicCureIncome, element.getHospitalizedIncome, element.getHospitalizedBeiIncome, element.getHospitalizedCireIncom, element.getHospitalizedOpsIncome, element.getDrugIncome, element.getClimicDrugIncome, element.getClimicWestenIncome, element.getHospitalizedDrugIncome, element.getHospitalizedWestenIncome, 0.0, 0.0)
+        
+        def startCalcMarket = (admin_hosp_data, admin_hsop_match_data, admin_market_data, user_market) match {
+            case (Some(hospdatabase), Some(hospmatchingdata), Some(market), Some(listCpaMarket)) => {
+//                log.info(s"hospdatabase size: ${hospdatabase.size}")
+//                log.info(s"hospmatchingdata size: ${hospmatchingdata.size}")
+//                log.info(s"market size: ${market.size}")
+//                log.info(s"listCpaMarket size: ${listCpaMarket.size}")
+                
+                log.info("start calc")
+//                log.info(s"admin_hosp_data size: ${admin_hosp_data.size}")
+                val act = currentActorSystem().actorOf(Props[MarketRoutesActor], "main")
+                
+                val r = act ? excute(MarketMessageRoutes((Madmin_hosp_data(admin_hosp_data) :: 
+                                                             Madmin_hosp_match(admin_hsop_match_data) ::
+                                                             Madmin_markets(admin_market_data) ::
+                                                             Muser_market(user_market) ::
+                                                             Nil),None,None,None,None))
+//                val r = act ? excute(MarketMessageRoutes((Madmin_hosp_data(admin_hosp_data) :: 
+//                                                             Madmin_hosp_match(admin_hsop_match_data) ::
+//                                                             Madmin_markets(admin_market_data) ::
+//                                                             Muser_market(user_market) ::
+//                                                             Nil),None))
+
+                log.info("end calc")
+                context.stop(self)
+            }
+            case _ => Unit
         }
-    }).flatten
-    println(data_max.size)
-    RunDate.endDate("拼接计算表", time)
+    }
     
-    /**
-     * 开始计算
-     */
-    time = RunDate.startDate()
-    val data_max_new = CalcData(data_max,integratedData)
-    println(data_max_new.size)
-    val aa = new PrintWriter("""D:/123.txt""")
-    data_max_new filter (x => x.finalResultsValue != 0 && x.finalResultsUnit != 0) foreach (x => aa.println(x))
-    aa.close()
-    RunDate.endDate("开始计算", time)
-    RunDate.endDate("读取", start)
+    def apply() = currentActorSystem().actorOf(Props(new ExcelReadActor), "cpamarket") ! (new start)
+    cpaMarketCalc()
 }

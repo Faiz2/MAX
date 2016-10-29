@@ -1,7 +1,40 @@
-@(message: String)
+@(title: String)
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>@title</title>
+	<script type="text/javascript" src="//cdn.bootcss.com/jquery/1.9.1/jquery.min.js"></script>
+	<script type="text/javascript">
+		$(function(){
+			$("#PhaMarket").click(function(){
+				//location ="/phaMarket"
+				$.post("/phaMarket",{},function(data){
 
-@main("Welcome to Play") {
+				})
+			})
+			$("#PhaProduct").click(function(){
+				$.post("/phaProduct",{},function(data){
 
-    @play20.welcome(message)
+				})
+			})
+			$("#CpaMarket").click(function(){
+				$.post("/cpaMarket",{},function(data){
 
-}
+				})
+			})
+			$("#CpaProduct").click(function(){
+				$.post("/cpaProduct",{},function(data){
+
+				})
+			})
+		})
+	</script>
+</head>
+	<body>
+		<button id="PhaMarket">PhaMarket</button><br><br>
+		<button id="PhaProduct">PhaProduct</button><br><br>
+		<button id="CpaMarket">CpaMarket</button><br><br>
+		<button id="CpaProduct">CpaProduct</button>
+	</body>
+</html>

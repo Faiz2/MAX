@@ -1,7 +1,9 @@
 package excel.model.CPA;
 
+import excel.model.common.commonMarketObjectTrait;
 
-public class CpaMarket {
+
+public class CpaMarket extends commonMarketObjectTrait{
     private String province;
 
     private String city;

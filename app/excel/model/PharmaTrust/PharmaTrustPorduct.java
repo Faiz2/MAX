@@ -1,6 +1,10 @@
 package excel.model.PharmaTrust;
 
-public class PharmaTrustPorduct{
+import com.pharbers.util.StringOption;
+import excel.model.common.commonProductObjectTrait;
+import com.pharbers.util.StringOption;
+
+public class PharmaTrustPorduct extends commonProductObjectTrait {
 
     private String province;
 
@@ -161,5 +165,9 @@ public class PharmaTrustPorduct{
 	public void setMinimumUnit(String minimumUnit) {
 		this.minimumUnit = minimumUnit;
 	}
-    
+   
+    public String commonObjectCondition() {
+    	return StringOption.takeStringSpace(
+            this.getTradename() + this.getManufacturer() + this.getDosageforms() + this.getDrugspecifications() + this.getNumberPackaging());
+    }
 }

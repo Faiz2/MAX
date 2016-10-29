@@ -5,7 +5,10 @@ package excel.model.CPA;
  * @author Faiz
  *
  */
-public class CpaProduct {
+import excel.model.common.commonProductObjectTrait;
+import com.pharbers.util.StringOption;
+
+public class CpaProduct extends commonProductObjectTrait {
 
 	private String province;
 
@@ -178,6 +181,14 @@ public class CpaProduct {
 	public void setManufacturer(String manufacturer) {
 		this.manufacturer = manufacturer;
 	}
+
+    public String commonObjectCondition() {
+    	return StringOption.takeStringSpace(this.getTradename() +
+    	        this.getManufacturer() +
+    	        this.getDosageforms() +
+    	        this.getDrugspecifications() +
+    	        this.getNumberPackaging());
+    }
 
 	/*@Override
 	public String toString() {

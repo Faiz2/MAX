@@ -47,8 +47,6 @@ class integratedData(@BeanProperty val uploadYear : Int,
                              "	"+sumValue.toString()+
                              "	"+volumeUnit.toString()
                              
-  lazy val sortConditions1 : String = {
-    MD5.md5(uploadYear.toString + uploadMonth.toString + hospNum.toString + StringOption.takeStringSpace(minimumUnitCh.toString)) 
-  }
-  
+  lazy val sortConditions1 : String = uploadYear.toString + uploadMonth.toString + hospNum.toString + StringOption.takeStringSpace(minimumUnitCh.toString)
+//    MD5.md5(uploadYear.toString + uploadMonth.toString + hospNum.toString + StringOption.takeStringSpace(minimumUnitCh.toString)) 
 }

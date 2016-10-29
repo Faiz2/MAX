@@ -86,7 +86,6 @@ class modelRunData(@BeanProperty val	company	:String,
 //                             "uploadYear = "+uploadYear.toString()+"，uploadMonth = "+uploadMonth.toString()+"，minimumUnitCh = "+minimumUnitCh+"，hospId = "+hospId
                              
                              
-    lazy val sortConditions1 : String = {
-      MD5.md5(uploadYear.toString + uploadMonth.toString + hospId.toString + StringOption.takeStringSpace(minimumUnitCh.toString))
-    }
+    lazy val sortConditions1 : String = uploadYear.toString + uploadMonth.toString + hospId.toString + StringOption.takeStringSpace(minimumUnitCh.toString)
+//      MD5.md5(uploadYear.toString + uploadMonth.toString + hospId.toString + StringOption.takeStringSpace(minimumUnitCh.toString))
 }

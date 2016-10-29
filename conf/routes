@@ -3,7 +3,11 @@
 # ~~~~
 
 # Home page
-GET     /                           controllers.maxController.index
+GET     /index                           controllers.maxController.index
+POST	/phaMarket						 controllers.maxController.phaMarket
+POST	/phaProduct						 controllers.maxController.phaProduct
+POST	/cpaMarket						 controllers.maxController.cpaMarket
+POST	/cpaProduct						 controllers.maxController.cpaProduct
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)

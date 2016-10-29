@@ -8,9 +8,8 @@ import com.pharbers.datacalc.manager.common.LoadEnum
 import com.pharbers.datacalc.manager.common.dataAdapter
 
 object readHospDataBase {
-//    """E:\文件\法伯相关\MAX改建\程序测试数据\管理员上传\8000家taxol医院数据库表.xlsx"""
-    def apply(fileDri: String) = new readHospDataBase(
-                                    new readHospDataAdapter, fileDri)
+    def apply(fileDir: String) = new readHospDataBase(
+                                    new readHospDataAdapter, fileDir)
 }
 
 class readHospDataBase(adapter : dataAdapter, file : String) {

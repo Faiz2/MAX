@@ -1,7 +1,9 @@
 package excel.model.PharmaTrust;
 
+import excel.model.common.commonMarketObjectTrait;
 
-public class PharmaTrustMarket{
+
+public class PharmaTrustMarket extends commonMarketObjectTrait{
     private String province;
 
     private String city;
