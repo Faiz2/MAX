@@ -24,7 +24,7 @@ object phaProductCalc extends App {
      * 医院数据库
      */
     var time = RunDate.startDate()
-    val hospdatabase = readHospDataBase("""E:\文件\法伯相关\MAX改建\程序测试数据\管理员上传\8000家taxol医院数据库表.xlsx""")
+    val hospdatabase = readHospDataBase("""E:\文件\法伯相关\MAX改建\程序测试数据\管理员上传\8000家taxol医院数据库表.xlsx""").listHospDataBase
     println(hospdatabase.size)
     RunDate.endDate("医院数据库", time)
 
@@ -32,7 +32,7 @@ object phaProductCalc extends App {
      * 样本医院
      */
     time = RunDate.startDate()
-    val hospmatchingdata = readHospMatchData("""E:\文件\法伯相关\MAX改建\程序测试数据\管理员上传\管理员维护_样本医院匹配表_2016_HTN_bpeng.xlsx""")
+    val hospmatchingdata = readHospMatchData("""E:\文件\法伯相关\MAX改建\程序测试数据\管理员上传\管理员维护_样本医院匹配表_2016_HTN_bpeng.xlsx""").listHospDataBase
     println(hospmatchingdata.size)
     RunDate.endDate("样本医院", time)
 
@@ -71,8 +71,8 @@ object phaProductCalc extends App {
     lazy val hospNum = elem1.map(_.getHospNum.asInstanceOf[Number].longValue()).distinct
     val integratedData = (elem1.filter(x => hospNum.contains(x.getHospNum)).map { x =>
         val phaProduct = x
-        val hospMatch_opt = elem3.find(_.getHospNum == x.getHospNum)
         val product_opt = elem2.find(x_opt => StringOption.takeStringSpace(x_opt.getMinimumUnit).equals(PharmaTrustProductMinunitString(x)))
+        val hospMatch_opt = elem3.find(_.getHospNum == x.getHospNum)
         (hospMatch_opt, product_opt) match {
             case (Some(hospMatch), Some(product)) =>
                 Some(new integratedData(phaProduct.getUploadYear, phaProduct.getUploadMonth, hospMatch.getDatasource, hospMatch.getHospNum, phaProduct.getSumValue, phaProduct.getVolumeUnit, product.getMinimumUnit, product.getMinimumUnitCh, product.getMinimumUnitEn, product.getManufacturerCh, product.getManufacturerEn, product.getGeneralnameCh, product.getGeneralnameEn, product.getTradenameCh, product.getTradenameEn, product.getDosageformsCh, product.getDosageformsEn, product.getDrugspecificationsCh, product.getDrugspecificationsEn, product.getNumberPackagingCh, product.getNumberPackagingEn, product.getSkuCh, product.getSkuEn, product.getMarket1Ch, product.getMarket1En, hospMatch.getHospNameCh, hospMatch.getHospNameEn, hospMatch.getHospLevelCh, hospMatch.getHospLevelEn, hospMatch.getAreaCh, hospMatch.getAreaEn, hospMatch.getProvinceCh, hospMatch.getProvinceEn, hospMatch.getCityCh, hospMatch.getCityEn))

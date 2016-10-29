@@ -26,7 +26,7 @@ object cpaProductCalc extends App {
      * 医院数据库
      */
     var time = RunDate.startDate()
-    val hospdatabase = readHospDataBase("""E:\文件\法伯相关\MAX改建\程序测试数据\管理员上传\8000家taxol医院数据库表.xlsx""")
+    val hospdatabase = readHospDataBase("""E:\文件\法伯相关\MAX改建\程序测试数据\管理员上传\8000家taxol医院数据库表.xlsx""").listHospDataBase
     println("hospdatabase size:"+hospdatabase.size.toString)
     RunDate.endDate("医院数据库", time)
     
@@ -34,7 +34,7 @@ object cpaProductCalc extends App {
      * 样本医院
      */
     time = RunDate.startDate()
-    val hospmatchingdata = readHospMatchData("""E:\文件\法伯相关\MAX改建\程序测试数据\管理员上传\管理员维护_样本医院匹配表_2016_HTN_bpeng.xlsx""")
+    val hospmatchingdata = readHospMatchData("""E:\文件\法伯相关\MAX改建\程序测试数据\管理员上传\管理员维护_样本医院匹配表_2016_HTN_bpeng.xlsx""").listHospDataBase
     println("hospmatchingdata size:"+hospmatchingdata.size.toString)
     RunDate.endDate("样本医院", time)
     
